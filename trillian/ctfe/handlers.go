@@ -813,10 +813,10 @@ func getEntries(ctx context.Context, li *logInfo, w http.ResponseWriter, r *http
 	w.Header().Set("X-Rob-Count-2", fmt.Sprintf("%d", int(count)))
 	if len(rsp.Leaves) < int(count) {
 		w.Header().Set(cacheControlHeader, cacheControlPartial)
-		w.Header().Set("X-Rob-Cache-Control", cacheControlPartial)
+		w.Header().Set("X-Rob-Cache-Control-Partial", cacheControlPartial)
 	} else {
 		w.Header().Set(cacheControlHeader, cacheControlImmutable)
-		w.Header().Set("X-Rob-Cache-Control", cacheControlImmutable)
+		w.Header().Set("X-Rob-Cache-Control-Immutable", cacheControlImmutable)
 	}
 	w.Header().Set(contentTypeHeader, contentTypeJSON)
 	jsonData, err := json.Marshal(&jsonRsp)
