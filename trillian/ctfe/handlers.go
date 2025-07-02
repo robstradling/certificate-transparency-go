@@ -754,6 +754,7 @@ func getEntries(ctx context.Context, li *logInfo, w http.ResponseWriter, r *http
 	// sure the range is valid. We don't do an extra roundtrip to get the current tree
 	// size and prefer to let the backend handle this case
 	start, end, err := parseGetEntriesRange(r, MaxGetEntriesAllowed, li.logID)
+	w.Header().Set("X-Rob-Parsed-Get-Entries-Range", fmt.Sprintf("%d, %d", start, end))
 	if err != nil {
 		return http.StatusBadRequest, fmt.Errorf("bad range on get-entries request: %s", err)
 	}
@@ -762,6 +763,7 @@ func getEntries(ctx context.Context, li *logInfo, w http.ResponseWriter, r *http
 	// Now make a request to the backend to get the relevant leaves
 	var leaves []*trillian.LogLeaf
 	count := end + 1 - start
+	w.Header().Set("X-Rob-Count-1", fmt.Sprintf("%d", int(count)))
 	req := trillian.GetLeavesByRangeRequest{
 		LogId:      li.logID,
 		StartIndex: start,
@@ -772,6 +774,7 @@ func getEntries(ctx context.Context, li *logInfo, w http.ResponseWriter, r *http
 	if err != nil {
 		return httpStatus, err
 	}
+	w.Header().Set("X-Rob-Len-Leaves-1", fmt.Sprintf("%d", len(rsp.Leaves)))
 
 	var currentRoot types.LogRootV1
 	if err := currentRoot.UnmarshalBinary(rsp.GetSignedLogRoot().GetLogRoot()); err != nil {
@@ -806,10 +809,14 @@ func getEntries(ctx context.Context, li *logInfo, w http.ResponseWriter, r *http
 		return http.StatusInternalServerError, fmt.Errorf("failed to process leaves returned from backend: %s", err)
 	}
 
+	w.Header().Set("X-Rob-Len-Leaves-2", fmt.Sprintf("%d", len(rsp.Leaves)))
+	w.Header().Set("X-Rob-Count-2", fmt.Sprintf("%d", int(count)))
 	if len(rsp.Leaves) < int(count) {
 		w.Header().Set(cacheControlHeader, cacheControlPartial)
+		w.Header().Set("X-Rob-Cache-Control", cacheControlPartial)
 	} else {
 		w.Header().Set(cacheControlHeader, cacheControlImmutable)
+		w.Header().Set("X-Rob-Cache-Control", cacheControlImmutable)
 	}
 	w.Header().Set(contentTypeHeader, contentTypeJSON)
 	jsonData, err := json.Marshal(&jsonRsp)
