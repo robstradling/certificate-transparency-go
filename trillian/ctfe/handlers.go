@@ -818,6 +818,7 @@ func getEntries(ctx context.Context, li *logInfo, w http.ResponseWriter, r *http
 		w.Header().Set(cacheControlHeader, cacheControlImmutable)
 		w.Header().Set("X-Rob-Cache-Control-Immutable", cacheControlImmutable)
 	}
+	w.Header().Set("X-Rob-Generated-At", time.Now().String())
 	w.Header().Set(contentTypeHeader, contentTypeJSON)
 	jsonData, err := json.Marshal(&jsonRsp)
 	if err != nil {
